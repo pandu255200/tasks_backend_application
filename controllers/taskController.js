@@ -2,7 +2,7 @@ const Task = require('../models/Task');
 
 exports.getTasks = async (req, res) => {
   try {
-    const tasks = await Task.find();
+    const tasks = await Task.find().populate('assignedBy').populate('assignedTo'); // Optional: populate related fields
     res.json(tasks);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch tasks' });
@@ -10,20 +10,22 @@ exports.getTasks = async (req, res) => {
 };
 
 exports.createTask = async (req, res) => {
-  const { title, description, status, dueDate, assignedBy, assignedTo } = req.body;
+  const { title, description, status, dueDate, dueDate1, assignedBy, assignedTo } = req.body;
+
   try {
-    const newTask = new Task({
-      title,
-      description,
-      status,
-      dueDate,
-      assignedBy,
-      assignedTo
+    const newTask = new Task({ 
+      title, 
+      description, 
+      status, 
+      dueDate, 
+      dueDate1, 
+      assignedBy, 
+      assignedTo 
     });
     await newTask.save();
     res.status(201).json(newTask);
   } catch (err) {
-    console.error('Error creating task:', err.message);
+    console.error('Error creating task!', err.message);
     res.status(400).json({ message: 'Failed to create task' });
   }
 };
@@ -49,3 +51,4 @@ exports.deleteTask = async (req, res) => {
     res.status(400).json({ message: 'Failed to delete task' });
   }
 };
+
