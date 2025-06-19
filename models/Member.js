@@ -20,6 +20,7 @@ const memberSchema = new mongoose.Schema({
   },
   mentor: { type: mongoose.Schema.Types.ObjectId, ref: 'Mentor' },
   attendance: [attendanceSchema],
+  dateOfJoining: { type: Date, default: Date.now } 
 });
 
 // Hash password before saving

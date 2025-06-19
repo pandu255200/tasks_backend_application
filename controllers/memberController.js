@@ -87,3 +87,17 @@ exports.updateAllMembersToIntern = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
+// in your member controller (say in memberController.js)
+exports.deleteMember = async (req, res) => {
+  try {
+    const memberId = req.params.id;
+
+    await Member.findByIdAndDelete(memberId);
+    res.status(200).json({ message: "Member deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+

@@ -62,6 +62,7 @@ router.post('/attendance', async (req, res) => {
   }
 });
 router.patch('/members/updateAllToIntern', memberController.updateAllMembersToIntern);
+router.delete('/members/:id', memberController.deleteMember);
 
 // Export router
 module.exports = router;

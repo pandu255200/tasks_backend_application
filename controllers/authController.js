@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
 // ✅ Register a new member
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, mentor, dateOfJoining } = req.body;
 
     // Check if a member with this email already exists
     const existing = await Member.findOne({ email });
@@ -21,8 +21,10 @@ exports.register = async (req, res) => {
     const member = new Member({ 
       name, 
       email, 
-      password: hashed, 
-      role: role ? role : "intern" // fallback to 'intern'
+      password,
+      role: role ? role : "intern",// fallback to 'intern'
+      mentor,
+      dateOfJoining 
     });
 
     await member.save();
@@ -37,30 +39,70 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // Check if the member exists
     const member = await Member.findOne({ email });
-    if (!member) return res.status(404).json({ error: "Invalid email or password" });
 
-    // Validate password
+    if (!member) {
+      console.log("❌ User not found");
+      return res.status(404).json({ error: "Invalid email or password" });
+    }
+
+    console.log("✅ Member found:", member.email);
+    console.log("🔑 Provided Password:", password);
+    console.log("🔐 Stored Hash:", member.password);
+
     const isMatch = await bcrypt.compare(password, member.password);
-    if (!isMatch) return res.status(400).json({ error: "Invalid email or password" });
 
-    // Generate JWT
+    if (!isMatch) {
+      console.log("❌ Password mismatch");
+      return res.status(400).json({ error: "Invalid email or password" });
+    }
+
     const token = jwt.sign({ id: member._id }, JWT_SECRET, { expiresIn: "1d" });
 
-    res.status(200).json({ 
+    res.status(200).json({
       message: "Login successful",
       token,
       member: {
         id: member._id,
         name: member.name,
         email: member.email,
-        role: member.role // NEW
-      }
+        role: member.role,
+        dateOfJoining: member.dateOfJoining,
+      },
     });
   } catch (error) {
+    console.error("🔥 Login error:", error);
     res.status(500).json({ error: error.message });
   }
 };
 
+
+
+// ✅ Update password
+exports.updatePassword = async (req, res) => {
+  try {
+    const { email, oldPassword, newPassword } = req.body;
+
+    const member = await Member.findOne({ email });
+    if (!member) return res.status(404).json({ error: "Member not found" });
+
+    const isMatch = await bcrypt.compare(oldPassword, member.password);
+    if (!isMatch) return res.status(400).json({ error: "Old password is incorrect" });
+
+    // Backup current dateOfJoining
+    const currentDate = member.dateOfJoining;
+
+    // Update password (relies on pre('save') middleware)
+    member.password = newPassword;
+    member.markModified("password");
+
+    // Prevent unwanted date update
+    member.dateOfJoining = currentDate;
+
+    await member.save();
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
