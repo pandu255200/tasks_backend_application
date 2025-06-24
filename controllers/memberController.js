@@ -53,7 +53,8 @@ exports.markAttendance = async (req, res) => {
     member.attendance.push({ 
       date, 
       present, 
-      leaveReason: leaveReason ? leaveReason : '' 
+      leaveReason: leaveReason ? leaveReason : '',
+       status: 'pending'
     });
     await member.save();
 
@@ -101,3 +102,63 @@ exports.deleteMember = async (req, res) => {
   }
 };
 
+// PUT /api/attendance/:memberId/:attendanceId/review
+ // Review (approve/reject) an attendance entry
+exports.reviewAttendance = async (req, res) => {
+  try {
+    const { memberId, attendanceId } = req.params;
+    const { status } = req.body;
+
+    const member = await Member.findById(memberId);
+    if (!member) return res.status(404).json({ message: "Member not found" });
+
+    const attendance = member.attendance.id(attendanceId);
+    if (!attendance) return res.status(404).json({ message: "Attendance record not found" });
+
+    // Set status
+    attendance.status = status;
+
+    // If rejected, also set present = false
+    if (status === 'rejected') {
+      attendance.present = false;
+    }
+
+    await member.save();
+
+    res.status(200).json({ message: `Attendance ${status}` });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// GET /api/mentors/:mentorId/pending-attendance
+exports.getPendingAttendanceForMentor = async (req, res) => {
+  try {
+    const { mentorId } = req.params;
+
+    // Find all interns under this mentor
+    const interns = await Member.find({ mentor: mentorId });
+
+    let pendingAttendance = [];
+
+    interns.forEach(intern => {
+      intern.attendance.forEach(record => {
+        if (record.status === 'pending') {
+          pendingAttendance.push({
+            internId: intern._id,
+            internName: intern.name,
+            attendanceId: record._id,
+            date: record.date,
+            present: record.present,
+            leaveReason: record.leaveReason,
+            status: record.status
+          });
+        }
+      });
+    });
+
+    res.status(200).json({ pending: pendingAttendance });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

@@ -5,7 +5,10 @@ const bcrypt = require('bcrypt');
 const attendanceSchema = new mongoose.Schema({ 
   date: { type: Date, required: true },
   present: { type: Boolean, required: true },
-  leaveReason: { type: String, default: '' } // NEW
+  leaveReason: { type: String, default: '' } ,// NEW
+   status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }, 
+  reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Member', default: null }, // NEW
+  reviewedAt: { type: Date, default: null }
 });
 
 // Member Schema with role
