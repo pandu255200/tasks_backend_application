@@ -106,3 +106,28 @@ exports.updatePassword = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
+
+
+
+
+// PUT /api/members/update-password (Protected)
+exports.updatePasswords = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+
+    const member = await Member.findById(req.member._id);
+    if (!member) return res.status(404).json({ error: 'Member not found' });
+
+    const isMatch = await bcrypt.compare(oldPassword, member.password);
+    if (!isMatch) return res.status(400).json({ error: 'Old password is incorrect' });
+
+    member.password = newPassword; // Will be hashed by pre-save hook
+    await member.save();
+
+    res.status(200).json({ message: 'Password updated successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

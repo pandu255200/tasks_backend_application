@@ -22,7 +22,7 @@ exports.createMentor = async (req, res) => {
     const mentor = await Mentor.create({
       name,
       email,
-      password: hashedPassword,
+      password,
       role: 'mentor'
     });
 
@@ -97,6 +97,36 @@ exports.deleteMentor = async (req, res) => {
     }
 
     res.status(200).json({ message: 'Mentor deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+// PUT /api/mentors/mentor/update-password
+exports.updateMentorPasswordByEmail = async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    // ✅ Get mentor from token (req.mentor set by auth middleware)
+    const mentor = await Mentor.findById(req.mentor.id);
+    if (!mentor) {
+      return res.status(404).json({ error: 'Mentor not found' });
+    }
+
+    // ✅ Check old password
+    const isMatch = await bcrypt.compare(oldPassword, mentor.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Old password is incorrect' });
+    }
+
+    // ✅ Update password (will be hashed via schema pre-save)
+    mentor.password = newPassword;
+    await mentor.save();
+
+    res.status(200).json({ message: 'Password updated successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
